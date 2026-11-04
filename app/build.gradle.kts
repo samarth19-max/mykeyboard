@@ -162,7 +162,7 @@ val channelSourceDirs = listOfNotNull(playServicesSourceDir, updaterSourceDir, g
 // libraries are pinned rather than bundled, and the `en` flavour keeps its
 // language packs. Neither can be fetched without the permission; both come in
 // as imports of the files the release and the data repository publish.
-val noInternet = flag("wmkb.noInternet", "WMKB_NO_INTERNET")
+val noInternet = flag("wmkb.noInternet", "WMKB_NO_INTERNET", default = "true")
 
 // A build that cannot ask for location at all (#350): `-Pwmkb.noLocation=true`.
 // The Location tool keeps its saved places and hides Locate me; the weather and
@@ -178,7 +178,7 @@ val noLocation = flag("wmkb.noLocation", "WMKB_NO_LOCATION")
 // pinned file fetched elsewhere (NativeDelivery.import).
 // `-Pwmkb.nativeDelivery=false` bundles everything as before.
 val nativeDelivery = flag("wmkb.nativeDelivery", "WMKB_NATIVE_DELIVERY", default = "true") &&
-    !playStoreChannel
+    !playStoreChannel && !noInternet
 if (nativeDelivery) apply(plugin = "wmkeyboard.native-pins")
 
 // The Keyman grids as a download (KeymanLayoutPack): `-Pwmkb.keymanLayoutPack=true`
