@@ -178,6 +178,7 @@ object NetLog {
         live: Boolean = true,
     ): NetCall {
         InternetPermission.check()
+        LocalNetworkPolicy.checkHost(host)
         val call = NetCall(
             source = source,
             method = method.uppercase(),

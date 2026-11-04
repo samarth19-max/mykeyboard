@@ -6,6 +6,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.Inet4Address
+import com.wasimaster.wmkeyboard.core.netlog.LocalNetworkPolicy
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
@@ -114,6 +115,10 @@ class LanShare(
                 socket.accept()
             } catch (e: IOException) {
                 break
+            }
+            if (runCatching { LocalNetworkPolicy.checkAddress(client.inetAddress) }.isFailure) {
+                runCatching { client.close() }
+                continue
             }
             open += client
             try {

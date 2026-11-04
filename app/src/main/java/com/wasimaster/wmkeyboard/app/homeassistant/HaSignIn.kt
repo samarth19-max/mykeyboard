@@ -103,11 +103,12 @@ object HaSignIn {
             val id = HaAuth.credentialOf(callback.state)
             val credential = repository.settings.first().providerCredential(id)
             val expected = credential?.extra?.get(HomeKeys.AUTH_STATE).orEmpty()
-            if (credential == null || expected.isEmpty() || HaAuth.nonceOf(expected) != HaAuth.nonceOf(callback.state)) {
+            if (credential == null || expected.isEmpty() || expected != callback.state) {
                 _status.value = Status.Failed(app.getString(com.wasimaster.wmkeyboard.R.string.ha_sign_in_state_mismatch))
                 return@launch
             }
-            val base = HaAuth.baseOf(callback.state) ?: baseOf(credential)
+            // Never let callback-controlled state choose a token endpoint.
+            val base = baseOf(credential)
             if (base == null) {
                 _status.value = Status.Failed(app.getString(com.wasimaster.wmkeyboard.R.string.ha_sign_in_no_server))
                 return@launch
@@ -117,7 +118,7 @@ object HaSignIn {
                 val tokens = withContext(Dispatchers.IO) { HaAuth.exchange(http, base, callback.code) }
                 val instance = runCatching { withContext(Dispatchers.IO) { HaRest(http, { base }, { tokens.accessToken }).config() } }.getOrNull()
                 repository.updateProviderCredential(id) { c ->
-                    c.copy(apiKey = "", extra = HaConnection.withTokens(c.extra, tokens) + learnt(instance))
+                    c.copy(apiKey = "", extra = HaConnection.withTokens(c.extra - HomeKeys.AUTH_STATE, tokens) + learnt(instance))
                 }
                 repository.setHaEnabled(true)
                 _status.value = Status.SignedIn(instance?.name ?: credential.name.ifBlank { "Home" })

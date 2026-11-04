@@ -1,6 +1,7 @@
 package com.wasimaster.wmkeyboard.core.net
 
 import com.wasimaster.wmkeyboard.core.netlog.InternetPermission
+import com.wasimaster.wmkeyboard.core.netlog.LocalNetworkPolicy
 import okhttp3.Interceptor
 import okhttp3.Response
 
@@ -17,6 +18,8 @@ import okhttp3.Response
 object InternetGate : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         InternetPermission.check()
+        // Application interceptor: reject public destinations before OkHttp DNS.
+        LocalNetworkPolicy.checkHost(chain.request().url.host)
         return chain.proceed(chain.request())
     }
 }
