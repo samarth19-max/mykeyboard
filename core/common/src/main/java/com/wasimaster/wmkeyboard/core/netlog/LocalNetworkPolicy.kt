@@ -21,12 +21,18 @@ import java.net.UnknownHostException
 object LocalNetworkPolicy {
 
     /** Throws before a connection or DNS lookup is attempted for a non-LAN host. */
-    fun checkHost(host: String) {
+    fun checkHost(
+        host: String,
+        resolve: (String) -> Array<InetAddress> = { name -> InetAddress.getAllByName(name) },
+    ) {
         val normalized = host.trim().trimEnd('.').lowercase()
         if (normalized.isEmpty()) throw blocked(host)
-        if (normalized == "localhost" || normalized.endsWith(".localhost") ||
-            normalized.endsWith(".local")
-        ) return
+        if (normalized == "localhost" || normalized.endsWith(".localhost")) return
+        if (normalized.endsWith(".local")) {
+            val addresses = runCatching { resolve(normalized) }.getOrNull()
+            if (addresses.isNullOrEmpty() || addresses.any { !isLocalAddress(it) }) throw blocked(host)
+            return
+        }
 
         val ipv4 = parseIpv4(normalized)
         if (ipv4 != null) {
@@ -46,13 +52,14 @@ object LocalNetworkPolicy {
 
     /** Checks an already-resolved peer without performing another name lookup. */
     fun checkAddress(address: InetAddress) {
-        val allowed = when (address) {
-            is Inet4Address -> isLocalIpv4(address.address.map { it.toInt() and 0xff }.toIntArray()) ||
-                address.address.contentEquals(byteArrayOf(-1, -1, -1, -1))
-            is Inet6Address -> isLocalIpv6(address.address)
-            else -> false
-        }
-        if (!allowed) throw blocked(address.hostAddress.orEmpty())
+        if (!isLocalAddress(address)) throw blocked(address.hostAddress.orEmpty())
+    }
+
+    private fun isLocalAddress(address: InetAddress): Boolean = when (address) {
+        is Inet4Address -> isLocalIpv4(address.address.map { it.toInt() and 0xff }.toIntArray()) ||
+            address.address.contentEquals(byteArrayOf(-1, -1, -1, -1))
+        is Inet6Address -> isLocalIpv6(address.address)
+        else -> false
     }
 
     private fun parseIpv4(host: String): IntArray? {
