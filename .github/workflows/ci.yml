@@ -279,6 +279,9 @@ jobs:
       - name: Assemble the local-only app
         run: ./gradlew :app:assembleIntlDebug -Pwmkb.localOnly=true --stacktrace
 
+      - name: Run Whisper.cpp model and import tests
+        run: ./gradlew :core:voice:testDebugUnitTest -Pwmkb.localOnly=true -Pwmkb.skipBenchmarks=true --stacktrace
+
       - name: Run app tests with the local-only provider registry
         run: ./gradlew :app:testIntlDebugUnitTest -Pwmkb.localOnly=true -Pwmkb.skipBenchmarks=true --stacktrace
 
