@@ -71,7 +71,7 @@ object LocalNetworkPolicy {
         // fc00::/7 (unique-local) and fe80::/10 (link-local).
         val first = bytes[0].toInt() and 0xff
         val second = bytes[1].toInt() and 0xff
-        return first and 0xfe == 0xfc || (first == 0xfe && second and 0xc0 == 0x80)
+        return (first and 0xfe) == 0xfc || (first == 0xfe && (second and 0xc0) == 0x80)
     }
 
     private fun blocked(host: String) =
