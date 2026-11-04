@@ -37,6 +37,7 @@ import com.wasimaster.wmkeyboard.core.translate.BergamotTranslator
 import com.wasimaster.wmkeyboard.core.translate.NllbTranslator
 import com.wasimaster.wmkeyboard.core.translate.OnDeviceTranslator
 import com.wasimaster.wmkeyboard.core.voice.executorch.EtEngine
+import com.wasimaster.wmkeyboard.core.voice.whisper.WhisperCatalog
 import com.wasimaster.wmkeyboard.core.voice.whistle.WhistleEngine
 import com.wasimaster.wmkeyboard.core.settings.ProviderEdits
 import com.wasimaster.wmkeyboard.core.settings.ResolvedProvider
@@ -335,7 +336,7 @@ internal fun ProviderOwnSettings(
     when (type.id) {
         // ---- Voice typing: what the voice screen used to stack under its dictation rows.
         ProviderTypes.SYSTEM_RECOGNIZER.id -> SystemRecognizerSettings(repository, settings)
-        ProviderTypes.WHISPER.id -> if (isWhisperEnabled()) {
+        ProviderTypes.WHISPER.id -> if (isWhisperEnabled() || WhisperCatalog.cppAvailable) {
             WhisperOfflineSettings(repository, settings)
             WhisperModelManager(repository, settings)
         }
