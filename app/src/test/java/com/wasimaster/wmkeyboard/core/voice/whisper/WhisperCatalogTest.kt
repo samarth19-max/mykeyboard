@@ -18,10 +18,16 @@ class WhisperCatalogTest {
     fun `every model has positive sizes and a vocab companion`() {
         for (m in WhisperCatalog.models) {
             assertTrue("${m.id} model bytes", m.modelBytes > 0)
-            assertTrue("${m.id} vocab bytes", m.vocabBytes > 0)
             assertEquals(m.modelBytes + m.vocabBytes, m.sizeBytes)
-            assertTrue("${m.id} model file", m.modelFile.endsWith(".tflite"))
-            assertTrue("${m.id} vocab file", m.vocabFile.endsWith(".bin"))
+            if (m.ggml) {
+                assertEquals("${m.id} GGML vocab bytes", 0L, m.vocabBytes)
+                assertEquals("${m.id} GGML vocab file", "", m.vocabFile)
+                assertTrue("${m.id} model file", m.modelFile.endsWith(".bin"))
+            } else {
+                assertTrue("${m.id} vocab bytes", m.vocabBytes > 0)
+                assertTrue("${m.id} model file", m.modelFile.endsWith(".tflite"))
+                assertTrue("${m.id} vocab file", m.vocabFile.endsWith(".bin"))
+            }
         }
     }
 
@@ -57,7 +63,7 @@ class WhisperCatalogTest {
         // carries; the English-only graphs want the English tokenizer; everything
         // else wants the 80-band multilingual one.
         val v3 = setOf("turbo-multi", "large-v3-multi")
-        for (m in WhisperCatalog.models) {
+        for (m in WhisperCatalog.models.filterNot { it.ggml }) {
             val expected = when {
                 m.id in v3 -> "filters_vocab_multilingual-v3.bin"
                 m.fixedLang == "en" -> "filters_vocab_en.bin"
@@ -196,13 +202,17 @@ class WhisperCatalogTest {
         // Enabling German adds its graph and nothing else — the Urdu pair that
         // used to show up regardless stays hidden.
         val german = WhisperCatalog.visibleFor(setOf("de")).map { it.id }
-        assertEquals(anyLanguage + "base-de", german)
+        assertEquals(anyLanguage.filterNot { it == "cpp-apex-hinglish" } + "base-de", german)
         assertTrue(german.none { it.endsWith("-ur") })
 
         // Every single-language graph for an enabled language shows, not just one:
         // Urdu has both a Base and a Small.
         val urdu = WhisperCatalog.visibleFor(setOf("ur")).map { it.id }
         assertTrue(urdu.containsAll(listOf("base-ur", "small-ur")))
+        assertTrue("Apex is visible for Hindi/English, not Urdu", "cpp-apex-hinglish" !in urdu)
+        val hinglish = WhisperCatalog.visibleFor(setOf("hi")).map { it.id }
+        assertTrue("Apex is available for Hindi", "cpp-apex-hinglish" in hinglish)
+        assertTrue("Swift is available for Hindi", "cpp-swift-hinglish" in hinglish)
     }
 
     @Test
@@ -242,5 +252,25 @@ class WhisperCatalogTest {
             WhisperCatalog.singleLanguageFor("en").map { it.id },
         )
         assertTrue(WhisperCatalog.singleLanguageFor("bn").isEmpty())
+    }
+
+    @Test
+    fun `Hinglish model entries have the expected format and language routing`() {
+        if (!WhisperCatalog.cppAvailable) return
+        val apex = WhisperCatalog.byId("cpp-apex-hinglish")!!
+        assertEquals("gouravg8/gtm-hi2hing-ggml", apex.repo)
+        assertEquals("ggml-apex-hinglish-q8_0.bin", apex.modelFile)
+        assertTrue(apex.ggml)
+        assertEquals(setOf("hi", "en"), apex.langCodes)
+        assertTrue(apex.forceAutoLanguage)
+        assertNull(apex.sha256)
+
+        val swift = WhisperCatalog.byId("cpp-swift-hinglish")!!
+        assertEquals("anish2305/airnote-hinglish-stt-ggml", swift.repo)
+        assertEquals("ggml-oriserve-hinglish-q8_0.bin", swift.modelFile)
+        assertTrue(swift.ggml)
+        assertEquals(setOf("hi"), swift.langCodes)
+        assertTrue(swift.fastInference)
+        assertNull(swift.sha256)
     }
 }
