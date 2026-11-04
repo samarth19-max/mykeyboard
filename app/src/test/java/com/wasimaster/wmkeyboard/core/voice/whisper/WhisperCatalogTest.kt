@@ -255,6 +255,13 @@ class WhisperCatalogTest {
     }
 
     @Test
+    fun `Hindi suggestions include both local Hinglish models`() {
+        val suggested = WhisperCatalog.recommendedFor(setOf("hi")).map { it.id }
+        assertTrue("Swift should be suggested for Hindi", "cpp-swift-hinglish" in suggested)
+        assertTrue("Apex should be suggested for Hindi", "cpp-apex-hinglish" in suggested)
+    }
+
+    @Test
     fun `Hinglish model entries have the expected format and language routing`() {
         if (!WhisperCatalog.cppAvailable) return
         val apex = WhisperCatalog.byId("cpp-apex-hinglish")!!
