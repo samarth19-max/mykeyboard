@@ -39,11 +39,31 @@ To run the app unit tests under the same profile:
 
 ## Models and language packs
 
-The profile does not silently fetch model weights. A local engine may still need
-a model file (for example a GGUF model, speech model or translation pack).
-Import that file from device storage using the app's local import flow. No model
-is downloaded by the app in this profile. A provider may remain unavailable
-until its required model has been imported.
+The profile does not silently fetch model weights. Import model files from
+device storage using the app's local import flow. No model is downloaded by
+the app in this profile.
+
+### Hinglish speech recognition
+
+The bundled `whisper.cpp` runtime supports these optional GGML models:
+
+- **AirNote Swift Hinglish Q8_0** (~78 MB), file
+  `ggml-oriserve-hinglish-q8_0.bin`. Hindi fine-tune; greedy decoding is used
+  to reduce latency. It is offered for Hindi dictation.
+- **Apex Hinglish Q8_0** (~834 MB), file
+  `ggml-apex-hinglish-q8_0.bin`. Large-v3-Turbo fine-tune for Hindi/English
+  Hinglish; model-side language detection is retained.
+
+Download the Q8_0 file manually from the corresponding Hugging Face repository,
+then open Voice typing → Whisper → Import and select the `.bin` file. The
+importer checks the expected filename, a bounded file-size range and whether
+the bundled Whisper runtime can load the GGML model. A model will appear as a
+voice engine only after it has been imported. Both produce Romanized Hinglish,
+not Devanagari.
+
+The Android system speech recognizer is not offered in this profile because it
+runs in another app and may use a remote service. Select an imported local model
+or another bundled on-device engine instead.
 
 ## Important boundary
 
