@@ -126,6 +126,8 @@ data class WhisperModel(
     val importSizeRange: LongRange? = null,
     /** Use greedy decoding instead of beam search when minimum latency matters more than recall. */
     val fastInference: Boolean = false,
+    /** Leave language selection to the model when its fine-tune expects auto-detection. */
+    val forceAutoLanguage: Boolean = false,
 ) {
     /** Runs on whisper.cpp rather than LiteRT. */
     val ggml: Boolean get() = format == WhisperFormat.GGML
@@ -504,6 +506,7 @@ object WhisperCatalog {
             selectableLang: Boolean = !english,
             importSizeRange: LongRange? = null,
             fastInference: Boolean = false,
+            forceAutoLanguage: Boolean = false,
         ) = WhisperModel(
             id = id,
             displayName = if (english) "Whisper $name (${WhisperLanguages.label("en")})" else "Whisper $name",
@@ -525,29 +528,29 @@ object WhisperCatalog {
             revision = revision,
             importSizeRange = importSizeRange,
             fastInference = fastInference,
+            forceAutoLanguage = forceAutoLanguage,
         )
         return listOf(
             entry(
                 "cpp-apex-hinglish",
                 WhisperSize.TURBO,
                 "ggml-apex-hinglish-q8_0.bin",
-                874_188_075L,
-                // LFS SHA-256 for the same Apex Q8_0 conversion published by its credited mirror.
-                "bef6d9d571e9e7bd3cd2ebba8b2d5c9cc4731e210d6750ae6a9c621a87e60d4c",
-                R.string.core_voice_model_cpp_turbo_body,
+                834_000_000L,
+                descriptionRes = R.string.core_voice_model_apex_hinglish_body,
                 name = "Apex Hinglish",
                 translate = false,
                 repo = "gouravg8/gtm-hi2hing-ggml",
-                langCodes = setOf("hi"),
+                langCodes = setOf("hi", "en"),
                 selectableLang = false,
-                importSizeRange = 860_000_000L..890_000_000L,
+                importSizeRange = 820_000_000L..845_000_000L,
+                forceAutoLanguage = true,
             ),
             entry(
                 "cpp-swift-hinglish",
                 WhisperSize.BASE,
                 "ggml-oriserve-hinglish-q8_0.bin",
                 78_000_000L,
-                descriptionRes = R.string.core_voice_model_cpp_base_body,
+                descriptionRes = R.string.core_voice_model_swift_hinglish_body,
                 name = "AirNote Swift Hinglish (Fast)",
                 translate = false,
                 repo = "anish2305/airnote-hinglish-stt-ggml",
