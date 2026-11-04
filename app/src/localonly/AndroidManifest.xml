@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Strict local-only build overlay. The base app and several third-party
+    libraries declare network permissions for optional online features.
+    Remove them from the final merged manifest, not just from app source.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" tools:node="remove" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" tools:node="remove" />
+
+    <!-- Cloud sign-in and cross-device network sync have no place in this edition. -->
+    <activity
+        android:name="com.wasimaster.wmkeyboard.app.oauth.OAuthRedirectActivity"
+        tools:node="remove" />
+    <service
+        android:name="com.wasimaster.wmkeyboard.app.SyncJobService"
+        tools:node="remove" />
+</manifest>
