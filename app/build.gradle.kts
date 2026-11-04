@@ -172,7 +172,7 @@ val noInternet = flag("wmkb.noInternet", "WMKB_NO_INTERNET") || localOnly
 // A build that cannot ask for location at all (#350): `-Pwmkb.noLocation=true`.
 // The Location tool keeps its saved places and hides Locate me; the weather and
 // compass tools fall back to a typed or searched place, as before.
-val noLocation = flag("wmkb.noLocation", "WMKB_NO_LOCATION")
+val noLocation = flag("wmkb.noLocation", "WMKB_NO_LOCATION") || localOnly
 
 // Native delivery (wmkeyboard.native-pins): the GitHub and F-Droid builds
 // leave the native libraries behind optional features out of the APK and
