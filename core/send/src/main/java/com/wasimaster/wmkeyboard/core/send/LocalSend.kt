@@ -554,9 +554,12 @@ class LocalSendNode(
             } catch (e: IOException) {
                 break
             }
+            if (runCatching { LocalNetworkPolicy.checkAddress(client.inetAddress) }.isFailure) {
+                runCatching { client.close() }
+                continue
+            }
+            open += client
             try {
-                LocalNetworkPolicy.checkAddress(client.inetAddress)
-                open += client
                 pool.execute { serve(client) }
             } catch (e: RejectedExecutionException) {
                 open -= client
