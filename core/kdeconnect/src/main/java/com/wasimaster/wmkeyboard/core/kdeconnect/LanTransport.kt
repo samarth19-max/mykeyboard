@@ -1,5 +1,6 @@
 package com.wasimaster.wmkeyboard.core.kdeconnect
 
+import com.wasimaster.wmkeyboard.core.netlog.LocalNetworkPolicy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -164,7 +165,12 @@ internal class LanTransport(
             for (host in hosts) {
                 val name = host.trim()
                 if (name.isEmpty() || !HOST.matches(name)) continue
-                runCatching { targets += InetAddress.getByName(name) }
+                runCatching {
+                    LocalNetworkPolicy.checkHost(name)
+                    val resolved = InetAddress.getByName(name)
+                    LocalNetworkPolicy.checkAddress(resolved)
+                    targets += resolved
+                }
             }
             for (target in targets) {
                 runCatching { socket.send(DatagramPacket(bytes, bytes.size, target, ports.udpTarget)) }
@@ -177,7 +183,10 @@ internal class LanTransport(
         val socket = udp ?: return
         val bytes = self().toPacket(tcpPort = tcpPort).serialize(now()).toByteArray(Charsets.UTF_8)
         scope.launch(Dispatchers.IO) {
-            runCatching { socket.send(DatagramPacket(bytes, bytes.size, address)) }
+            runCatching {
+                address.address?.let(LocalNetworkPolicy::checkAddress) ?: throw IOException("unresolved LAN peer")
+                socket.send(DatagramPacket(bytes, bytes.size, address))
+            }
         }
     }
 
@@ -221,6 +230,10 @@ internal class LanTransport(
     }
 
     private fun dialOut(address: InetAddress, port: Int, deviceId: String, version: Int, announced: KdeDeviceInfo?) {
+        runCatching { LocalNetworkPolicy.checkAddress(address) }.onFailure {
+            log("refusing non-LAN KDE Connect peer ${address.hostAddress}")
+            return
+        }
         if (isDowngrade(deviceId, version)) {
             log("refusing protocol downgrade from $deviceId")
             return
@@ -266,6 +279,10 @@ internal class LanTransport(
     private fun answer(socket: Socket) {
         try {
             val sender = socket.inetAddress
+            runCatching { LocalNetworkPolicy.checkAddress(sender) }.onFailure {
+                socket.close()
+                return
+            }
             if (sender.isLoopbackAddress && !allowLoopback) {
                 socket.close()
                 return
