@@ -957,6 +957,7 @@ object ProviderTypes {
         OFFLINE_LANGUAGES,
         IMPORTED_DICTIONARIES,
         ON_DEVICE_AI,
+        WHISPER,
         WHISTLE,
         ASR4ALL,
         PARAKEET,
