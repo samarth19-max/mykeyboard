@@ -941,19 +941,33 @@ object ProviderTypes {
     )
 
     /**
-     * The local-only build exposes only providers implemented entirely on the
-     * device. Remote APIs, self-hosted endpoints, cloud AI and system recognizers
-     * are omitted from resolution as well as from the provider picker.
+     * Providers available in a build with no Google SDKs and no network permission.
+     * These are deliberately listed rather than derived from allTypes: the local
+     * release has no reference to any remote or self-hosted provider entry.
      */
-    val all: List<ProviderType> = if (BuildConfig.LOCAL_ONLY) {
-        allTypes.filter { type ->
-            type.onDevice &&
-                (type.id != ML_KIT.id || BuildConfig.GOOGLE_SDKS) &&
-                (type.id != WHISPER.id || BuildConfig.ENABLE_WHISPER)
-        }
-    } else {
-        allTypes
-    }
+    private val localOnlyTypes: List<ProviderType> = listOf(
+        OFFLINE_GIFS,
+        STICKER_PACKS,
+        BERGAMOT,
+        NLLB,
+        VOCAB_PACKS,
+        OFFLINE_WIKTIONARY,
+        OFFLINE_WORDNET,
+        OFFLINE_BENGALI,
+        OFFLINE_LANGUAGES,
+        IMPORTED_DICTIONARIES,
+        ON_DEVICE_AI,
+        WHISTLE,
+        ASR4ALL,
+        PARAKEET,
+        MOONSHINE,
+        SHERPA,
+        OMNILINGUAL,
+        HARPER,
+        ON_DEVICE_IMAGE,
+    )
+
+    val all: List<ProviderType> = if (BuildConfig.LOCAL_ONLY) localOnlyTypes else allTypes
 
     private val byId: Map<String, ProviderType> = all.associateBy { it.id }
 
