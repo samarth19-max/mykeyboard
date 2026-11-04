@@ -16,7 +16,7 @@ class LocalNetworkPolicyTest {
             "192.168.1.10",
             "169.254.1.2",
             "127.0.0.1",
-        ).forEach(LocalNetworkPolicy::checkHost)
+        ).forEach { LocalNetworkPolicy.checkHost(it) }
     }
 
     @Test
