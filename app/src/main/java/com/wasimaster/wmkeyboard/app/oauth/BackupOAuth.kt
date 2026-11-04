@@ -52,7 +52,7 @@ object BackupOAuth {
      * The sign-in that is waiting for the browser to come back, if any, and
      * the location the token is for.
      */
-    private data class Pending(val destination: BackupDestination, val verifier: String, val locationId: String)
+    private data class Pending(val destination: BackupDestination, val verifier: String, val state: String, val locationId: String)
 
     @Volatile
     private var pending: Pending? = null
@@ -74,15 +74,16 @@ object BackupOAuth {
 
     private fun savePending(context: Context, value: Pending) {
         runCatching {
-            pendingFile(context).writeText("${value.destination.name}\n${value.locationId}\n${value.verifier}")
+            pendingFile(context).writeText("${value.destination.name}\n${value.locationId}\n${value.verifier}\n${value.state}")
         }
     }
 
     private fun takePending(context: Context): Pending? {
         val file = pendingFile(context)
         val saved = runCatching {
-            val (destination, locationId, verifier) = file.readText().split('\n', limit = 3)
-            Pending(BackupDestination.valueOf(destination), verifier, locationId)
+            val fields = file.readText().split('\n', limit = 4)
+            require(fields.size == 4)
+            Pending(BackupDestination.valueOf(fields[0]), fields[2], fields[3], fields[1])
         }.getOrNull()
         file.delete()
         return saved
@@ -137,7 +138,8 @@ object BackupOAuth {
     ): Boolean {
         if (clientId.isEmpty()) return false
         val verifier = newVerifier()
-        pending = Pending(destination, verifier, locationId).also { savePending(activity, it) }
+        val state = newVerifier().take(STATE_CHARS)
+        pending = Pending(destination, verifier, state, locationId).also { savePending(activity, it) }
 
         val url = when (destination) {
             BackupDestination.DROPBOX -> Uri.parse(DropboxSink.AUTHORIZE_URL)
@@ -147,6 +149,7 @@ object BackupOAuth {
                 .appendQueryParameter("redirect_uri", REDIRECT_URI)
                 .appendQueryParameter("code_challenge", challengeFor(verifier))
                 .appendQueryParameter("code_challenge_method", "S256")
+                .appendQueryParameter("state", state)
                 // Without this Dropbox issues a four-hour access token and no
                 // refresh token, and every backup after the first would fail.
                 .appendQueryParameter("token_access_type", "offline")
@@ -160,17 +163,17 @@ object BackupOAuth {
                 .appendQueryParameter("scope", OneDriveSink.SCOPE)
                 .appendQueryParameter("code_challenge", challengeFor(verifier))
                 .appendQueryParameter("code_challenge_method", "S256")
+                .appendQueryParameter("state", state)
                 .build()
 
-            // No PKCE parameters: Box's sign-in takes the client secret
-            // instead, and its redirect has to be an https page, which hands
-            // the code on to REDIRECT_URI (docs/public/oauth/index.html).
+            // Box requires a client secret at its token endpoint. State is still
+            // independently random and must be echoed by the redirect page.
             BackupDestination.BOX -> Uri.parse(BoxSink.AUTHORIZE_URL)
                 .buildUpon()
                 .appendQueryParameter("client_id", clientId)
                 .appendQueryParameter("response_type", "code")
                 .appendQueryParameter("redirect_uri", BoxSink.REDIRECT_URI)
-                .appendQueryParameter("state", verifier.take(STATE_CHARS))
+                .appendQueryParameter("state", state)
                 .build()
 
             else -> return false
@@ -194,6 +197,15 @@ object BackupOAuth {
         pending = null
         val destination = waiting.destination
         val locationId = waiting.locationId
+        val returnedState = uri?.getQueryParameter("state")
+        val stateMatches = returnedState != null && MessageDigest.isEqual(
+            waiting.state.toByteArray(Charsets.UTF_8),
+            returnedState.toByteArray(Charsets.UTF_8),
+        )
+        if (!stateMatches) {
+            _result.value = Result(locationId, Outcome.FAILED)
+            return
+        }
         if (code == null) {
             _result.value = Result(locationId, Outcome.CANCELLED)
             return
