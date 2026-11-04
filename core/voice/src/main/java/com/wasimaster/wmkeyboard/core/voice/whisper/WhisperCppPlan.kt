@@ -28,7 +28,7 @@ object WhisperCppPlan {
      * LibriSpeech, beam search cut tiny.en's word error rate from 10.2 to 9.4 %
      * on clean speech and from 54 to 49 % with people talking behind it.
      */
-    fun beamSize(model: WhisperModel): Int = when (model.size) {
+    fun beamSize(model: WhisperModel): Int = if (model.fastInference) 1 else when (model.size) {
         WhisperSize.TINY, WhisperSize.BASE, WhisperSize.SMALL, WhisperSize.TURBO -> BEAM
         WhisperSize.MEDIUM, WhisperSize.LARGE -> 1
     }
@@ -52,6 +52,10 @@ object WhisperCppPlan {
      * leaves none, the model detects among all of its own.
      */
     fun languages(model: WhisperModel, languageIds: List<String>): List<String> {
+        // A fine-tune with a fixed language (the two Hinglish checkpoints) must
+        // receive the language used during its conversion/training, even when
+        // the currently active keyboard layout is English.
+        model.fixedLang?.let { return listOf(it) }
         if (!model.multilingual) return emptyList()
         return languageIds.mapNotNull(WhisperLanguages::codeForLanguage).distinct()
     }
