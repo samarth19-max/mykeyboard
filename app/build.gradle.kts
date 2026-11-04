@@ -177,7 +177,7 @@ val noLocation = flag("wmkb.noLocation", "WMKB_NO_LOCATION")
 // no-internet build too, which cannot fetch a library but imports the same
 // pinned file fetched elsewhere (NativeDelivery.import).
 // `-Pwmkb.nativeDelivery=false` bundles everything as before.
-val nativeDelivery = flag("wmkb.nativeDelivery", "WMKB_NATIVE_DELIVERY", default = "true") &&
+val nativeDelivery = flag("wmkb.nativeDelivery", "WMKB_NATIVE_DELIVERY", default = "false") &&
     !playStoreChannel && !noInternet
 if (nativeDelivery) apply(plugin = "wmkeyboard.native-pins")
 
