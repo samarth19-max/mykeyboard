@@ -358,7 +358,7 @@ object ToolHttp {
     ): BytesResponse = metered(url, method, source, route) { connection, call ->
         connection.connectTimeout = 15_000
         connection.readTimeout = timeoutMs
-        connection.instanceFollowRedirects = true
+        connection.instanceFollowRedirects = false
         connection.setRequestProperty("User-Agent", USER_AGENT)
         connection.requestMethod = method
         for ((name, value) in headers) connection.setRequestProperty(name, value)
@@ -493,7 +493,7 @@ object ToolHttp {
                 connection.readTimeout = timeoutMs
                 connection.setRequestProperty("User-Agent", USER_AGENT)
                 for ((name, value) in headers) connection.setRequestProperty(name, value)
-                connection.instanceFollowRedirects = true
+                connection.instanceFollowRedirects = false
                 val status = connection.responseCode
                 call.status = status
                 if (status !in 200..299) throw httpFailure(status, null)
