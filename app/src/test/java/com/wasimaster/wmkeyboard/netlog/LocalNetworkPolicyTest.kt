@@ -20,9 +20,21 @@ class LocalNetworkPolicyTest {
     }
 
     @Test
-    fun allowsLocalhostAndMdnsNames() {
-        listOf("localhost", "printer.local", "homeassistant.local", "device.localhost")
-            .forEach(LocalNetworkPolicy::checkHost)
+    fun allowsLocalhostAndValidatedMdnsNames() {
+        LocalNetworkPolicy.checkHost("localhost")
+        LocalNetworkPolicy.checkHost("device.localhost")
+        LocalNetworkPolicy.checkHost("printer.local") {
+            arrayOf(java.net.InetAddress.getByName("192.168.1.25"))
+        }
+    }
+
+    @Test
+    fun blocksMdnsNamesThatResolveOutsideTheLan() {
+        assertThrows(UnknownHostException::class.java) {
+            LocalNetworkPolicy.checkHost("spoofed.local") {
+                arrayOf(java.net.InetAddress.getByName("203.0.113.5"))
+            }
+        }
     }
 
     @Test
