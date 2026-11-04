@@ -290,7 +290,7 @@ private fun VerifyChecksumsRow(repository: SettingsRepository, settings: LiveSet
 @Composable
 internal fun VoiceSettings(repository: SettingsRepository, settings: LiveSettings) {
     val scope = rememberCoroutineScope()
-    val whisperEnabled = com.wasimaster.wmkeyboard.core.settings.isWhisperEnabled()
+    val whisperEnabled = com.wasimaster.wmkeyboard.core.settings.isWhisperEnabled() || WhisperCatalog.cppAvailable
     // No library off arm64 or where F-Droid stripped it, so nothing to offer there (#548).
     val whistleEnabled = com.wasimaster.wmkeyboard.core.voice.whistle.WhistleEngine.shipped
     // The engines whose models download file by file: the ExecuTorch ones
