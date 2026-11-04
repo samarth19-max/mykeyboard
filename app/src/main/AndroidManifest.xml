@@ -346,7 +346,7 @@
         android:allowBackup="true"
         android:backupAgent="com.wasimaster.wmkeyboard.app.WMBackupAgent"
         android:fullBackupOnly="true"
-        android:usesCleartextTraffic="true"
+        android:usesCleartextTraffic="false"
         android:requestLegacyExternalStorage="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
