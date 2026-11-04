@@ -41,6 +41,15 @@ class WhisperCppPlanTest {
     }
 
     @Test
+    fun `Apex auto detection is not offered for unrelated languages`() {
+        if (!WhisperCatalog.cppAvailable) return
+        val apex = WhisperCatalog.byId("cpp-apex-hinglish")!!
+        assertTrue(apex.covers("hi"))
+        assertTrue(apex.covers("en"))
+        assertTrue(!apex.covers("de"))
+    }
+
+    @Test
     fun `Swift forces Hindi even when the active keyboard layout is English`() {
         val swift = model(WhisperSize.BASE, langCodes = setOf("hi"))
         assertEquals(listOf("hi"), WhisperCppPlan.languages(swift, listOf("en")))
