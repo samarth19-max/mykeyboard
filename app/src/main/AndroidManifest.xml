@@ -346,7 +346,10 @@
         android:allowBackup="true"
         android:backupAgent="com.wasimaster.wmkeyboard.app.WMBackupAgent"
         android:fullBackupOnly="true"
-        android:usesCleartextTraffic="false"
+        <!-- LAN-only mode must support local HTTP services (e.g. Ollama).
+             LocalNetworkPolicy rejects non-LAN destinations before requests
+             leave the device; see InternetGate and NetLog.callTo. -->
+        android:usesCleartextTraffic="true"
         android:requestLegacyExternalStorage="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
