@@ -52,9 +52,11 @@ object WhisperCppPlan {
      * leaves none, the model detects among all of its own.
      */
     fun languages(model: WhisperModel, languageIds: List<String>): List<String> {
-        // A fine-tune with a fixed language (the two Hinglish checkpoints) must
-        // receive the language used during its conversion/training, even when
-        // the currently active keyboard layout is English.
+        // Apex's model card explicitly recommends auto-detection for bilingual
+        // Hindi/English/Hinglish speech. Do not force the active keyboard layout.
+        if (model.forceAutoLanguage) return emptyList()
+        // Swift is a Hindi fine-tune; always pass Hindi even when the keyboard
+        // layout currently happens to be English.
         model.fixedLang?.let { return listOf(it) }
         if (!model.multilingual) return emptyList()
         return languageIds.mapNotNull(WhisperLanguages::codeForLanguage).distinct()
