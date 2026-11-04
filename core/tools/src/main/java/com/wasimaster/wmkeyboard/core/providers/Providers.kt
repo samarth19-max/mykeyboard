@@ -920,7 +920,7 @@ object ProviderTypes {
     fun voiceType(engine: String): ProviderType? =
         VOICE_ENGINES.entries.firstOrNull { it.value == engine }?.key?.let(::of)
 
-    val all: List<ProviderType> = listOf(
+    private val allTypes: List<ProviderType> = listOf(
         KLIPY, GIPHY, COMMONS, GIFCITIES, OFFLINE_GIFS, STICKER_PACKS,
         ML_KIT, BERGAMOT, NLLB, TRANSLATE_SERVER, DEEPL, LIBRETRANSLATE, MOZHI, SIMPLYTRANSLATE, LINGVA, TRANSLITE, GOOGLE_TRANSLATE,
         VOCAB_PACKS, WIKTIONARY, WIKTIONARY_REST, DICTIONARY_API, OFFLINE_WIKTIONARY, OFFLINE_WORDNET, OFFLINE_BENGALI, OFFLINE_LANGUAGES,
@@ -939,6 +939,21 @@ object ProviderTypes {
         AUDD, ACRCLOUD, AUDIOTAG, RAPID_SHAZAM, MUSIC_SERVER,
         CLOUDFLARE_SPEED, LIBRESPEED,
     )
+
+    /**
+     * The local-only build exposes only providers implemented entirely on the
+     * device. Remote APIs, self-hosted endpoints, cloud AI and system recognizers
+     * are omitted from resolution as well as from the provider picker.
+     */
+    val all: List<ProviderType> = if (BuildConfig.LOCAL_ONLY) {
+        allTypes.filter { type ->
+            type.onDevice &&
+                (type.id != ML_KIT.id || BuildConfig.GOOGLE_SDKS) &&
+                (type.id != WHISPER.id || BuildConfig.ENABLE_WHISPER)
+        }
+    } else {
+        allTypes
+    }
 
     private val byId: Map<String, ProviderType> = all.associateBy { it.id }
 
