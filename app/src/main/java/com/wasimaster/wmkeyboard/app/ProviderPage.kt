@@ -1,5 +1,6 @@
 package com.wasimaster.wmkeyboard.app
 
+import com.wasimaster.wmkeyboard.BuildConfig
 import com.wasimaster.wmkeyboard.core.settings.TavilyDepth
 import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.Composable
@@ -122,7 +123,8 @@ internal fun providerHostAccent(tool: ProviderTool, settings: LiveSettings): Col
  * provider's own screen rather than in a group on the tool's page that named
  * every service whether or not it was on the list.
  */
-internal val ProviderEndpoints: Map<String, List<ServiceEndpoint>> = mapOf(
+internal val ProviderEndpoints: Map<String, List<ServiceEndpoint>> =
+    if (BuildConfig.LOCAL_ONLY) emptyMap() else mapOf(
     ProviderTypes.KLIPY.id to listOf(ServiceEndpoint.KLIPY),
     ProviderTypes.GIPHY.id to listOf(ServiceEndpoint.GIPHY),
     ProviderTypes.GIFCITIES.id to listOf(ServiceEndpoint.GIFCITIES, ServiceEndpoint.WAYBACK_MACHINE),
