@@ -667,7 +667,16 @@ object WhisperCatalog {
      * 78 MB, since nothing would ever route dictation to it.
      */
     fun visibleFor(codes: Set<String>): List<WhisperModel> =
-        models.filter { model -> model.fixedLang?.let { it in codes } ?: true }
+        models.filter { model ->
+            when {
+                model.fixedLang != null -> model.fixedLang in codes
+                model.selectableLang || model.langCodes.isEmpty() -> true
+                // A fixed-language-set fine-tune such as Apex is only useful
+                // when at least one of its supported languages is enabled.
+                codes.isEmpty() -> true
+                else -> codes.any(model::covers)
+            }
+        }
 
     /** The single-language graphs for one language, smallest first. */
     fun singleLanguageFor(code: String): List<WhisperModel> =
