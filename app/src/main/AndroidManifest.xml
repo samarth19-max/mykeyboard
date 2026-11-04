@@ -3,24 +3,15 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.VIBRATE" />
-    <!-- Nothing the keyboard needs to type, predict, autocorrect or learn:
-         all of that runs on the device. Used only by features the user
-         starts or sets up:
-         - downloads the user picks: word lists, n-gram packs, emoji keyword
-           and CJK dictionaries, vocabulary packs, add-ons, Keyman layouts;
-         - online tools the user opens: translate, web and image search,
-           GIFs, photo backgrounds, dictionary and Wikipedia lookups,
-           weather, currency rates, AI writing. Each can be pointed at a
-           self-hosted server (LibreTranslate, SearXNG, MediaWiki, Ollama),
-           and on F-Droid currency rates start from free sources
-           (currency-api, Frankfurter);
-         - suggestion-strip chips for weather and currency, which on F-Droid
-           wait for a tap before they fetch;
-         - backups to a destination the user configures;
-         - clipboard link previews, off by default;
-         - the check-for-updates button.
-         Nothing breaks without it (#292): build with -Pwmkb.noInternet=true,
-         which also strips the copy ML Kit's manifest brings in. -->
+    <!-- The LAN-only edition keeps INTERNET so user-configured local
+         services can work: local AI endpoints (Ollama/LM Studio), Home
+         Assistant, KDE Connect, LocalSend, LAN Share, and SMB/NFS backup
+         destinations. App-managed requests are restricted by
+         LocalNetworkPolicy to loopback/private/link-local destinations;
+         arbitrary public hosts are refused. This is not a substitute for
+         auditing SDK-owned networking, which remains a release requirement.
+         The strict -Pwmkb.noInternet=true build removes this permission too,
+         and therefore disables LAN services as well. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Read by the model downloaders to ask "is this connection metered?"
          before pulling hundreds of megabytes. Declared here rather than
