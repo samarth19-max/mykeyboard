@@ -60,6 +60,8 @@
     <string name="core_voice_model_cpp_base_body">This model balances accuracy and speed. It uses the language you dictate in, in any of the 99 languages that Whisper knows, and it listens for your own words. Select it if the Small model is too slow.</string>
     <string name="core_voice_model_cpp_tiny_body">This is the fastest model. It works well with clear speech, but noise reduces the accuracy. It uses the language you dictate in and listens for your own words.</string>
     <string name="core_voice_model_cpp_turbo_body">This model is almost as accurate as the largest model, at half the size. Each phrase takes several seconds, and it cannot translate.</string>
+    <string name="core_voice_model_apex_hinglish_body">A fine-tuned Whisper Large-v3-Turbo model for Hindi, English and Hinglish speech. It outputs Romanized Hinglish, and uses automatic language detection. The Q8_0 model is about 834 MB and is demanding on memory.</string>
+    <string name="core_voice_model_swift_hinglish_body">A compact Whisper-base Hindi-to-Hinglish fine-tune. It outputs Romanized Hinglish. Its Q8_0 model is about 78 MB; greedy decoding favours lower latency over a wider beam search.</string>
     <string name="core_voice_model_cpp_medium_body">This model gives almost desktop accuracy. Each phrase takes several seconds. The model uses almost one gigabyte of memory while it runs.</string>
     <string name="core_voice_model_cpp_large_body">This is the most accurate Whisper model. The download is 1.1 GB. Only a device with a large amount of memory can load it. The Turbo model is almost as accurate and is half the size.</string>
 

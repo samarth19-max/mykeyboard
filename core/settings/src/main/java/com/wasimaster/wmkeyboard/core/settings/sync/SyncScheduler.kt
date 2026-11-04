@@ -4,6 +4,7 @@ import android.app.job.JobInfo
 import android.app.job.JobScheduler
 import android.content.ComponentName
 import android.content.Context
+import com.wasimaster.wmkeyboard.config.BuildConfig
 import com.wasimaster.wmkeyboard.core.settings.AutoBackupSettings
 import com.wasimaster.wmkeyboard.core.settings.SyncMode
 import com.wasimaster.wmkeyboard.core.settings.needsNetwork
@@ -58,6 +59,11 @@ object SyncScheduler {
      */
     fun sync(context: Context, settings: AutoBackupSettings) {
         val scheduler = context.getSystemService(JobScheduler::class.java) ?: return
+        if (BuildConfig.LOCAL_ONLY) {
+            runCatching { scheduler.cancel(PERIODIC_JOB_ID) }
+            runCatching { scheduler.cancel(SOON_JOB_ID) }
+            return
+        }
         val sync = settings.sync
         val on = sync.enabled && sync.targets(settings.locations).isNotEmpty() && sync.mode != SyncMode.MANUAL
         if (!on) {
@@ -84,6 +90,7 @@ object SyncScheduler {
      * call from anywhere a change or an app start is noticed.
      */
     fun requestSoon(context: Context, settings: AutoBackupSettings, delayMs: Long = DEBOUNCE_MS) {
+        if (BuildConfig.LOCAL_ONLY) return
         val sync = settings.sync
         if (!sync.enabled || sync.mode != SyncMode.SOON) return
         // Not worth a job that would only skip itself. The hourly pull is

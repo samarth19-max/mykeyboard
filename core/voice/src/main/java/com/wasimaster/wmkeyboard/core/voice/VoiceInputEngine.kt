@@ -15,6 +15,7 @@ import android.speech.RecognitionSupportCallback
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.core.content.ContextCompat
+import com.wasimaster.wmkeyboard.config.BuildConfig
 
 /**
  * Thin wrapper around the platform [SpeechRecognizer] for the voice input
@@ -102,10 +103,12 @@ class VoiceInputEngine(private val context: Context) {
 
     /** False on devices without any recognition service (no GMS). */
     fun isAvailable(): Boolean =
-        pickedService() != null ||
+        !BuildConfig.LOCAL_ONLY && (
+            pickedService() != null ||
             SpeechRecognizer.isRecognitionAvailable(context) ||
             (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                 SpeechRecognizer.isOnDeviceRecognitionAvailable(context))
+        )
 
     /**
      * Starts one utterance session; results stream to [listener]. Prefers
@@ -133,6 +136,10 @@ class VoiceInputEngine(private val context: Context) {
         alsoListenFor: List<String> = emptyList(),
     ) {
         cancel()
+        if (BuildConfig.LOCAL_ONLY) {
+            listener.onError(ErrorKind.OTHER)
+            return
+        }
         val picked = pickedService()
         val onDevice = picked == null && allowOnDevice &&
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
@@ -341,6 +348,10 @@ class VoiceInputEngine(private val context: Context) {
      * or for languages it can't serve at all.
      */
     fun checkOnDeviceModel(languageTag: String, onResult: (ModelCheckResult) -> Unit) {
+        if (BuildConfig.LOCAL_ONLY) {
+            onResult(ModelCheckResult.UNSUPPORTED)
+            return
+        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             !SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
         ) {
@@ -377,6 +388,10 @@ class VoiceInputEngine(private val context: Context) {
 
     /** Downloads [languageTag]'s on-device model via the system recognizer. */
     fun downloadModel(languageTag: String, callback: ModelDownloadCallback) {
+        if (BuildConfig.LOCAL_ONLY) {
+            callback.onError()
+            return
+        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             !SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
         ) {

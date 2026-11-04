@@ -28,7 +28,7 @@ object WhisperCppPlan {
      * LibriSpeech, beam search cut tiny.en's word error rate from 10.2 to 9.4 %
      * on clean speech and from 54 to 49 % with people talking behind it.
      */
-    fun beamSize(model: WhisperModel): Int = when (model.size) {
+    fun beamSize(model: WhisperModel): Int = if (model.fastInference) 1 else when (model.size) {
         WhisperSize.TINY, WhisperSize.BASE, WhisperSize.SMALL, WhisperSize.TURBO -> BEAM
         WhisperSize.MEDIUM, WhisperSize.LARGE -> 1
     }
@@ -52,6 +52,12 @@ object WhisperCppPlan {
      * leaves none, the model detects among all of its own.
      */
     fun languages(model: WhisperModel, languageIds: List<String>): List<String> {
+        // Apex's model card explicitly recommends auto-detection for bilingual
+        // Hindi/English/Hinglish speech. Do not force the active keyboard layout.
+        if (model.forceAutoLanguage) return emptyList()
+        // Swift is a Hindi fine-tune; always pass Hindi even when the keyboard
+        // layout currently happens to be English.
+        model.fixedLang?.let { return listOf(it) }
         if (!model.multilingual) return emptyList()
         return languageIds.mapNotNull(WhisperLanguages::codeForLanguage).distinct()
     }

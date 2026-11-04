@@ -53,10 +53,15 @@ val googleSdks = run {
         val file = rootProject.file("local.properties")
         if (file.exists()) file.inputStream().use { load(it) }
     }
-    !(providers.gradleProperty("wmkb.enableFdroid").orNull
+    val fdroid = (providers.gradleProperty("wmkb.enableFdroid").orNull
         ?: localProperties.getProperty("wmkb.enableFdroid")
         ?: System.getenv("WMKB_ENABLE_FDROID")
         ?: "false").toBoolean()
+    val localOnly = (providers.gradleProperty("wmkb.localOnly").orNull
+        ?: localProperties.getProperty("wmkb.localOnly")
+        ?: System.getenv("WMKB_LOCAL_ONLY")
+        ?: "false").toBoolean()
+    !fdroid && !localOnly
 }
 
 // The Qualcomm NPU runtime for Compute = NPU (#804): on unless
@@ -72,7 +77,8 @@ val npuRuntime = run {
     fun prop(name: String, env: String, default: String) =
         providers.gradleProperty(name).orNull ?: localProperties.getProperty(name) ?: System.getenv(env) ?: default
     prop("wmkb.enableNpu", "WMKB_ENABLE_NPU", "true").toBoolean() &&
-        !prop("wmkb.enableFdroid", "WMKB_ENABLE_FDROID", "false").toBoolean()
+        !prop("wmkb.enableFdroid", "WMKB_ENABLE_FDROID", "false").toBoolean() &&
+        !prop("wmkb.localOnly", "WMKB_LOCAL_ONLY", "false").toBoolean()
 }
 // A build with native delivery (see wmkeyboard.native-pins) fetches the same
 // files on demand instead, so it does not carry them as assets either. Read
@@ -84,7 +90,9 @@ val nativeDelivery = run {
     }
     fun prop(name: String, env: String, default: String) =
         providers.gradleProperty(name).orNull ?: localProperties.getProperty(name) ?: System.getenv(env) ?: default
-    prop("wmkb.nativeDelivery", "WMKB_NATIVE_DELIVERY", "true").toBoolean() && !playStoreChannel
+    prop("wmkb.nativeDelivery", "WMKB_NATIVE_DELIVERY", "true").toBoolean() &&
+        !playStoreChannel &&
+        !prop("wmkb.localOnly", "WMKB_LOCAL_ONLY", "false").toBoolean()
 }
 if (npuRuntime && !playStoreChannel && !nativeDelivery) apply(plugin = "wmkeyboard.npu-runtime")
 

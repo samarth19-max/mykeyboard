@@ -28,10 +28,15 @@ val googleSdks: Boolean = run {
         val file = rootProject.file("local.properties")
         if (file.exists()) file.inputStream().use { load(it) }
     }
-    !(providers.gradleProperty("wmkb.enableFdroid").orNull
+    val fdroid = (providers.gradleProperty("wmkb.enableFdroid").orNull
         ?: localProperties.getProperty("wmkb.enableFdroid")
         ?: System.getenv("WMKB_ENABLE_FDROID")
         ?: "false").toBoolean()
+    val localOnly = (providers.gradleProperty("wmkb.localOnly").orNull
+        ?: localProperties.getProperty("wmkb.localOnly")
+        ?: System.getenv("WMKB_LOCAL_ONLY")
+        ?: "false").toBoolean()
+    !fdroid && !localOnly
 }
 
 // Same channel flag :app reads (see the flag() helper there): a Play-store

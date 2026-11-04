@@ -88,7 +88,8 @@ fun wmkbFlag(name: String, env: String, default: Boolean): Boolean =
         ?: System.getenv(env)
         ?: default.toString()).toBoolean()
 
-if (wmkbFlag("wmkb.enablePlayStore", "WMKB_ENABLE_PLAY_STORE", default = false)) {
+val localOnlyBuild = wmkbFlag("wmkb.localOnly", "WMKB_LOCAL_ONLY", default = false)
+if (wmkbFlag("wmkb.enablePlayStore", "WMKB_ENABLE_PLAY_STORE", default = false) && !localOnlyBuild) {
     @Suppress("UNCHECKED_CAST")
     val gates = (groovy.json.JsonSlurper().parse(file("native/gates.json")) as Map<String, Any?>)["gates"] as List<Map<String, Any?>>
     for (gate in gates) {

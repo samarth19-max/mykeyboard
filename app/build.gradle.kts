@@ -98,9 +98,13 @@ val localProperties = Properties().apply {
 }
 
 fun apiKey(propertyName: String, envName: String): String =
-    localProperties.getProperty(propertyName)?.trim()
-        ?: System.getenv(envName)?.trim()
-        ?: ""
+    if (flag("wmkb.localOnly", "WMKB_LOCAL_ONLY")) {
+        ""
+    } else {
+        localProperties.getProperty(propertyName)?.trim()
+            ?: System.getenv(envName)?.trim()
+            ?: ""
+    }
 
 fun flag(propertyName: String, envName: String, default: String = "false"): Boolean =
     (providers.gradleProperty(propertyName).orNull
@@ -116,8 +120,9 @@ fun flag(propertyName: String, envName: String, default: String = "false"): Bool
 // app distributed through Play. So the choice selects source directories and a
 // manifest overlay, not just a dependency, and the code that is wrong for a
 // channel is absent from its APK rather than merely unreachable.
-val playStoreChannel = flag("wmkb.enablePlayStore", "WMKB_ENABLE_PLAY_STORE")
-val fdroidChannel = flag("wmkb.enableFdroid", "WMKB_ENABLE_FDROID")
+val localOnly = flag("wmkb.localOnly", "WMKB_LOCAL_ONLY")
+val playStoreChannel = flag("wmkb.enablePlayStore", "WMKB_ENABLE_PLAY_STORE") && !localOnly
+val fdroidChannel = flag("wmkb.enableFdroid", "WMKB_ENABLE_FDROID") || localOnly
 
 // Seam one: which Play *services* are linked. SplitInstall for the on-demand
 // :feature:llm module, and PlayAppUpdater, which lives here too.
@@ -142,7 +147,7 @@ val githubChannel = updaterSourceDir == "src/github/java"
 // reports the destination unavailable. The only thing behind it is getting an
 // OAuth token; the Drive REST calls themselves are ordinary HTTP in
 // :core:settings and compile everywhere.
-val gmsChannel = flag("wmkb.enableGms", "WMKB_ENABLE_GMS")
+val gmsChannel = flag("wmkb.enableGms", "WMKB_ENABLE_GMS") && !localOnly
 val gmsSourceDir = if (gmsChannel) "src/gms/java" else "src/nogms/java"
 
 // Whether Google's SDKs (ML Kit, LiteRT, LiteRT-LM) are in the build: in
@@ -162,12 +167,12 @@ val channelSourceDirs = listOfNotNull(playServicesSourceDir, updaterSourceDir, g
 // libraries are pinned rather than bundled, and the `en` flavour keeps its
 // language packs. Neither can be fetched without the permission; both come in
 // as imports of the files the release and the data repository publish.
-val noInternet = flag("wmkb.noInternet", "WMKB_NO_INTERNET")
+val noInternet = flag("wmkb.noInternet", "WMKB_NO_INTERNET") || localOnly
 
 // A build that cannot ask for location at all (#350): `-Pwmkb.noLocation=true`.
 // The Location tool keeps its saved places and hides Locate me; the weather and
 // compass tools fall back to a typed or searched place, as before.
-val noLocation = flag("wmkb.noLocation", "WMKB_NO_LOCATION")
+val noLocation = flag("wmkb.noLocation", "WMKB_NO_LOCATION") || localOnly
 
 // Native delivery (wmkeyboard.native-pins): the GitHub and F-Droid builds
 // leave the native libraries behind optional features out of the APK and
@@ -178,7 +183,7 @@ val noLocation = flag("wmkb.noLocation", "WMKB_NO_LOCATION")
 // pinned file fetched elsewhere (NativeDelivery.import).
 // `-Pwmkb.nativeDelivery=false` bundles everything as before.
 val nativeDelivery = flag("wmkb.nativeDelivery", "WMKB_NATIVE_DELIVERY", default = "true") &&
-    !playStoreChannel
+    !playStoreChannel && !localOnly
 if (nativeDelivery) apply(plugin = "wmkeyboard.native-pins")
 
 // The Keyman grids as a download (KeymanLayoutPack): `-Pwmkb.keymanLayoutPack=true`
@@ -197,6 +202,7 @@ val channelManifests = listOfNotNull(
     "src/google/AndroidManifest.xml".takeIf { googleSdks },
     "src/github/AndroidManifest.xml".takeIf { githubChannel },
     "src/nointernet/AndroidManifest.xml".takeIf { noInternet },
+    "src/localonly/AndroidManifest.xml".takeIf { localOnly },
     "src/nolocation/AndroidManifest.xml".takeIf { noLocation },
 )
 
@@ -295,6 +301,7 @@ android {
         buildConfigField("int", "RELEASE_VERSION_CODE", "$baseVersionCode")
         buildConfigField("Boolean", "ENABLE_PLAY_STORE", "$playStoreChannel")
         buildConfigField("Boolean", "ENABLE_FDROID", "$fdroidChannel")
+        buildConfigField("Boolean", "LOCAL_ONLY", "$localOnly")
         // The third channel is the absence of the other two, which is a fact
         // the update UI and the settings search index both have to test. Named
         // once here so they cannot disagree about the boolean algebra.
@@ -302,7 +309,7 @@ android {
         buildConfigField("Boolean", "ENABLE_GMS", "$gmsChannel")
         // What About calls this build: the standard one, or the one with no
         // internet permission. Shown as is, like a version name.
-        buildConfigField("String", "EDITION", "\"${if (noInternet) "Offline" else "Standard"}\"")
+        buildConfigField("String", "EDITION", "\"${if (localOnly) "Local only" else if (noInternet) "Offline" else "Standard"}\"")
         // This module's copies of :core:config's feature flags, for the
         // app-package screens: off in F-Droid's build, which has none of
         // Google's SDKs. Grammar is Harper, in every build.

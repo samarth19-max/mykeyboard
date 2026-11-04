@@ -122,6 +122,12 @@ data class WhisperModel(
     val sha256: String? = null,
     /** The repo revision files are fetched from: a commit, so a file cannot change under its hash. */
     val revision: String = "main",
+    /** Accepted file-size range for manually imported models whose LFS digest is unpublished. */
+    val importSizeRange: LongRange? = null,
+    /** Use greedy decoding instead of beam search when minimum latency matters more than recall. */
+    val fastInference: Boolean = false,
+    /** Leave language selection to the model when its fine-tune expects auto-detection. */
+    val forceAutoLanguage: Boolean = false,
 ) {
     /** Runs on whisper.cpp rather than LiteRT. */
     val ggml: Boolean get() = format == WhisperFormat.GGML
@@ -488,33 +494,71 @@ object WhisperCatalog {
             size: WhisperSize,
             file: String,
             bytes: Long,
-            sha256: String,
+            sha256: String? = null,
             @StringRes descriptionRes: Int,
             english: Boolean = false,
             name: String = size.catalogName,
             tier: WhisperTier = WhisperTier.STANDARD,
             translate: Boolean = !english,
+            repo: String = REPO_GGML,
+            revision: String = REV_GGML,
+            langCodes: Set<String> = if (english) setOf("en") else emptySet(),
+            selectableLang: Boolean = !english,
+            importSizeRange: LongRange? = null,
+            fastInference: Boolean = false,
+            forceAutoLanguage: Boolean = false,
         ) = WhisperModel(
             id = id,
             displayName = if (english) "Whisper $name (${WhisperLanguages.label("en")})" else "Whisper $name",
             size = size,
-            repo = REPO_GGML,
+            repo = repo,
             modelFile = file,
             vocabFile = "",
             modelBytes = bytes,
             vocabBytes = 0,
-            langCodes = if (english) setOf("en") else emptySet(),
-            // Any language can be named to a multilingual whisper.cpp model.
-            selectableLang = !english,
+            langCodes = langCodes,
+            // GGML models take a language name in whisper.cpp, not a token id.
+            selectableLang = selectableLang,
             supportsTranslate = translate,
             tier = tier,
             descriptionRes = descriptionRes,
             descriptionArg = if (english) WhisperLanguages.label("en") else "",
             format = WhisperFormat.GGML,
             sha256 = sha256,
-            revision = REV_GGML,
+            revision = revision,
+            importSizeRange = importSizeRange,
+            fastInference = fastInference,
+            forceAutoLanguage = forceAutoLanguage,
         )
         return listOf(
+            entry(
+                "cpp-apex-hinglish",
+                WhisperSize.TURBO,
+                "ggml-apex-hinglish-q8_0.bin",
+                834_000_000L,
+                descriptionRes = R.string.core_voice_model_apex_hinglish_body,
+                name = "Apex Hinglish",
+                translate = false,
+                repo = "gouravg8/gtm-hi2hing-ggml",
+                langCodes = setOf("hi", "en"),
+                selectableLang = false,
+                importSizeRange = 820_000_000L..845_000_000L,
+                forceAutoLanguage = true,
+            ),
+            entry(
+                "cpp-swift-hinglish",
+                WhisperSize.BASE,
+                "ggml-oriserve-hinglish-q8_0.bin",
+                78_000_000L,
+                descriptionRes = R.string.core_voice_model_swift_hinglish_body,
+                name = "AirNote Swift Hinglish (Fast)",
+                translate = false,
+                repo = "anish2305/airnote-hinglish-stt-ggml",
+                langCodes = setOf("hi"),
+                selectableLang = false,
+                importSizeRange = 70_000_000L..90_000_000L,
+                fastInference = true,
+            ),
             entry(
                 "cpp-small", WhisperSize.SMALL, "ggml-small-q8_0.bin", 264_464_607L,
                 "49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f",
@@ -623,7 +667,16 @@ object WhisperCatalog {
      * 78 MB, since nothing would ever route dictation to it.
      */
     fun visibleFor(codes: Set<String>): List<WhisperModel> =
-        models.filter { model -> model.fixedLang?.let { it in codes } ?: true }
+        models.filter { model ->
+            when {
+                model.fixedLang != null -> model.fixedLang in codes
+                model.selectableLang || model.langCodes.isEmpty() -> true
+                // A fixed-language-set fine-tune such as Apex is only useful
+                // when at least one of its supported languages is enabled.
+                codes.isEmpty() -> true
+                else -> codes.any(model::covers)
+            }
+        }
 
     /** The single-language graphs for one language, smallest first. */
     fun singleLanguageFor(code: String): List<WhisperModel> =
@@ -683,6 +736,9 @@ object WhisperCatalog {
         if (cppAvailable) {
             val picks = LinkedHashSet<WhisperModel>()
             listOfNotNull(default, byId("cpp-base")).forEach { picks += it }
+            if ("hi" in codes) {
+                listOfNotNull(byId("cpp-swift-hinglish"), byId("cpp-apex-hinglish")).forEach { picks += it }
+            }
             if ("en" in codes) byId("cpp-base-en")?.let { picks += it }
             byId("cpp-turbo")?.let { picks += it }
             return picks.take(limit)
@@ -705,6 +761,13 @@ object WhisperCatalog {
         // user is pointed straight at their own model.
         for (code in codes) {
             models.filter { it.fixedLang == code }.minWithOrNull(bestFirst)?.let { picks += it }
+        }
+
+        // The Hinglish fine-tunes are the most relevant speech models for
+        // Hindi users: Swift is the small/fast choice, Apex the larger bilingual
+        // choice. Keep both on the shortlist even though Apex uses auto-detection.
+        if ("hi" in codes) {
+            listOfNotNull(byId("cpp-swift-hinglish"), byId("cpp-apex-hinglish")).forEach { picks += it }
         }
 
         // Always leave an all-languages escape hatch — the only thing that

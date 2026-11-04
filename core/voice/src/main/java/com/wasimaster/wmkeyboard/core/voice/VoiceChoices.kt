@@ -1,5 +1,6 @@
 package com.wasimaster.wmkeyboard.core.voice
 
+import com.wasimaster.wmkeyboard.config.BuildConfig
 import com.wasimaster.wmkeyboard.core.voice.executorch.EtEngine
 import com.wasimaster.wmkeyboard.core.voice.executorch.EtModel
 import com.wasimaster.wmkeyboard.core.voice.executorch.EtStore
@@ -34,7 +35,10 @@ object VoiceChoices {
     const val SERVER = "server"
 
     /** The order engines are offered in, everywhere they are listed. */
-    val ENGINE_ORDER: List<String> = listOf(SYSTEM, WHISTLE, WHISPER) + EtEngine.entries.map { it.id } + SERVER
+    val ENGINE_ORDER: List<String> =
+        (if (BuildConfig.LOCAL_ONLY) emptyList() else listOf(SYSTEM)) +
+            listOf(WHISTLE, WHISPER) + EtEngine.entries.map { it.id } +
+            (if (BuildConfig.LOCAL_ONLY) emptyList() else listOf(SERVER))
 
     /**
      * The choices for [languageId] on this device. [whisperEnabled] is the
@@ -62,7 +66,9 @@ object VoiceChoices {
         etModels: List<EtModel>,
         serverConfigured: Boolean,
     ): List<VoiceChoice> = buildList {
-        add(VoiceChoice(SYSTEM))
+        // The Android system recognizer runs in another app and may forward
+        // audio to a cloud service. A local-only build never offers that path.
+        if (!BuildConfig.LOCAL_ONLY) add(VoiceChoice(SYSTEM))
         if (whistleReady && WhistleLanguages.supports(languageId)) add(VoiceChoice(WHISTLE))
         val code = WhisperLanguages.codeForLanguage(languageId)
         if (code != null) {
@@ -75,6 +81,6 @@ object VoiceChoices {
                 .sortedByDescending { it.millions }
                 .forEach { add(VoiceChoice(engine.id, it.id, it.label)) }
         }
-        if (serverConfigured) add(VoiceChoice(SERVER))
+        if (serverConfigured && !BuildConfig.LOCAL_ONLY) add(VoiceChoice(SERVER))
     }
 }

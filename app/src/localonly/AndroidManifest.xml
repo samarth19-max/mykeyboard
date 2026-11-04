@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Strict local-only profile: Android's INTERNET permission is the hard
+    boundary. Keep network-state and Wi-Fi discovery permissions because
+    existing offline paths inspect connection state and some LAN-related UI
+    uses them; without INTERNET the app cannot open IP sockets.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+
+    <!-- Cloud sign-in and cross-device network sync have no place in this edition. -->
+    <activity
+        android:name="com.wasimaster.wmkeyboard.app.oauth.OAuthRedirectActivity"
+        tools:node="remove" />
+    <service
+        android:name="com.wasimaster.wmkeyboard.app.SyncJobService"
+        tools:node="remove" />
+</manifest>

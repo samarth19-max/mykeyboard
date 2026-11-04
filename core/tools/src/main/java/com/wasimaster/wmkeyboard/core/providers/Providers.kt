@@ -920,7 +920,7 @@ object ProviderTypes {
     fun voiceType(engine: String): ProviderType? =
         VOICE_ENGINES.entries.firstOrNull { it.value == engine }?.key?.let(::of)
 
-    val all: List<ProviderType> = listOf(
+    private val allTypes: List<ProviderType> = listOf(
         KLIPY, GIPHY, COMMONS, GIFCITIES, OFFLINE_GIFS, STICKER_PACKS,
         ML_KIT, BERGAMOT, NLLB, TRANSLATE_SERVER, DEEPL, LIBRETRANSLATE, MOZHI, SIMPLYTRANSLATE, LINGVA, TRANSLITE, GOOGLE_TRANSLATE,
         VOCAB_PACKS, WIKTIONARY, WIKTIONARY_REST, DICTIONARY_API, OFFLINE_WIKTIONARY, OFFLINE_WORDNET, OFFLINE_BENGALI, OFFLINE_LANGUAGES,
@@ -939,6 +939,36 @@ object ProviderTypes {
         AUDD, ACRCLOUD, AUDIOTAG, RAPID_SHAZAM, MUSIC_SERVER,
         CLOUDFLARE_SPEED, LIBRESPEED,
     )
+
+    /**
+     * Providers available in a build with no Google SDKs and no network permission.
+     * These are deliberately listed rather than derived from allTypes: the local
+     * release has no reference to any remote or self-hosted provider entry.
+     */
+    private val localOnlyTypes: List<ProviderType> = listOf(
+        OFFLINE_GIFS,
+        STICKER_PACKS,
+        BERGAMOT,
+        NLLB,
+        VOCAB_PACKS,
+        OFFLINE_WIKTIONARY,
+        OFFLINE_WORDNET,
+        OFFLINE_BENGALI,
+        OFFLINE_LANGUAGES,
+        IMPORTED_DICTIONARIES,
+        ON_DEVICE_AI,
+        WHISPER,
+        WHISTLE,
+        ASR4ALL,
+        PARAKEET,
+        MOONSHINE,
+        SHERPA,
+        OMNILINGUAL,
+        HARPER,
+        ON_DEVICE_IMAGE,
+    )
+
+    val all: List<ProviderType> = if (BuildConfig.LOCAL_ONLY) localOnlyTypes else allTypes
 
     private val byId: Map<String, ProviderType> = all.associateBy { it.id }
 

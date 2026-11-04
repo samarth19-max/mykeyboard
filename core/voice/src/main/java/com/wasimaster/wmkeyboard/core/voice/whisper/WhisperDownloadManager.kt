@@ -149,7 +149,10 @@ object WhisperDownloadManager {
         modelFor(name, size) != null || WhisperCatalog.models.any { !it.ggml && it.vocabFile == name && it.vocabBytes == size }
 
     private fun modelFor(name: String, size: Long): WhisperModel? =
-        WhisperCatalog.models.firstOrNull { it.modelFile == name && it.modelBytes == size }
+        WhisperCatalog.models.firstOrNull { model ->
+            model.modelFile == name &&
+                (model.modelBytes == size || model.importSizeRange?.contains(size) == true)
+        }
 
     /**
      * Puts a file the user fetched some other way where a download would have
@@ -167,6 +170,12 @@ object WhisperDownloadManager {
         if (model?.sha256 != null &&
             !IntegrityChecks.accept(FileDownloader.sha256(file).equals(model.sha256, ignoreCase = true), name)
         ) {
+            return null
+        }
+        // The Swift conversion does not publish an LFS digest. Before accepting
+        // it by its unique filename and size band, ask the bundled whisper.cpp
+        // parser to open it; reject malformed or incompatible GGML files.
+        if (model?.ggml == true && model.sha256 == null && !WhisperCpp.acceptsModelFile(file)) {
             return null
         }
         if (model != null) {

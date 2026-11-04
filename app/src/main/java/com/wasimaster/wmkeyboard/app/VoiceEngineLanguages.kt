@@ -134,7 +134,7 @@ private fun VoiceEngineLanguagesDialog(
                     val choices = remember(id) {
                         VoiceChoices.choices(
                             context.filesDir, id,
-                            whisperEnabled = isWhisperEnabled(),
+                            whisperEnabled = isWhisperEnabled() || WhisperCatalog.cppAvailable,
                             serverConfigured = serverConfigured(id),
                         )
                     }

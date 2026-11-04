@@ -1,5 +1,6 @@
 package com.wasimaster.wmkeyboard.app
 
+import com.wasimaster.wmkeyboard.BuildConfig
 import com.wasimaster.wmkeyboard.core.settings.TavilyDepth
 import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.Composable
@@ -36,6 +37,7 @@ import com.wasimaster.wmkeyboard.core.translate.BergamotTranslator
 import com.wasimaster.wmkeyboard.core.translate.NllbTranslator
 import com.wasimaster.wmkeyboard.core.translate.OnDeviceTranslator
 import com.wasimaster.wmkeyboard.core.voice.executorch.EtEngine
+import com.wasimaster.wmkeyboard.core.voice.whisper.WhisperCatalog
 import com.wasimaster.wmkeyboard.core.voice.whistle.WhistleEngine
 import com.wasimaster.wmkeyboard.core.settings.ProviderEdits
 import com.wasimaster.wmkeyboard.core.settings.ResolvedProvider
@@ -122,7 +124,8 @@ internal fun providerHostAccent(tool: ProviderTool, settings: LiveSettings): Col
  * provider's own screen rather than in a group on the tool's page that named
  * every service whether or not it was on the list.
  */
-internal val ProviderEndpoints: Map<String, List<ServiceEndpoint>> = mapOf(
+internal val ProviderEndpoints: Map<String, List<ServiceEndpoint>> =
+    if (BuildConfig.LOCAL_ONLY) emptyMap() else mapOf(
     ProviderTypes.KLIPY.id to listOf(ServiceEndpoint.KLIPY),
     ProviderTypes.GIPHY.id to listOf(ServiceEndpoint.GIPHY),
     ProviderTypes.GIFCITIES.id to listOf(ServiceEndpoint.GIFCITIES, ServiceEndpoint.WAYBACK_MACHINE),
@@ -333,7 +336,7 @@ internal fun ProviderOwnSettings(
     when (type.id) {
         // ---- Voice typing: what the voice screen used to stack under its dictation rows.
         ProviderTypes.SYSTEM_RECOGNIZER.id -> SystemRecognizerSettings(repository, settings)
-        ProviderTypes.WHISPER.id -> if (isWhisperEnabled()) {
+        ProviderTypes.WHISPER.id -> if (isWhisperEnabled() || WhisperCatalog.cppAvailable) {
             WhisperOfflineSettings(repository, settings)
             WhisperModelManager(repository, settings)
         }
