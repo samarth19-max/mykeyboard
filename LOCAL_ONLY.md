@@ -19,14 +19,16 @@ To run the app unit tests under the same profile:
 
 ## What the profile enforces
 
-- Removes `INTERNET`, `ACCESS_NETWORK_STATE`, Wi-Fi discovery and network-state
-  permissions from the **merged APK manifest**, including permissions contributed
-  by dependencies.
+- Removes `INTERNET` from the **merged APK manifest**, including declarations
+  contributed by dependencies. Android's network-state and Wi-Fi discovery
+  permissions remain so the existing offline paths do not crash while inspecting
+  connectivity; without `INTERNET`, the app cannot open IP sockets.
 - Uses the F-Droid source set to omit Google Play Services and ML Kit code.
   Local GGUF inference, offline dictionaries, offline grammar, Tesseract OCR
   and supported on-device speech engines remain available where their runtime
   is bundled.
 - Clears every build-injected external API key and cloud OAuth client ID.
+- Disables location permission and location-dependent features in this build.
 - Exposes only provider types explicitly marked as on-device. Cloud APIs,
   public endpoints and user-configured self-hosted HTTP endpoints are not offered
   or resolved, including Ollama and LM Studio servers.
