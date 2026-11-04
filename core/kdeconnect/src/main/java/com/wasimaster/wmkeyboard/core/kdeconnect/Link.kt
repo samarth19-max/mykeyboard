@@ -1,5 +1,6 @@
 package com.wasimaster.wmkeyboard.core.kdeconnect
 
+import com.wasimaster.wmkeyboard.core.netlog.LocalNetworkPolicy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -196,6 +197,12 @@ internal class PayloadTransfer(
     ): Long {
         server.use { listening ->
             val raw = listening.accept()
+            try {
+                LocalNetworkPolicy.checkAddress(raw.inetAddress)
+            } catch (t: Throwable) {
+                raw.close()
+                throw t
+            }
             val tap = traffic?.open(KdeTrafficKind.PAYLOAD_SEND, raw.inetAddress, raw.localPort)
             try {
                 val ssl = tls.wrap(raw, clientMode = false, pinned = peer)
@@ -229,6 +236,7 @@ internal class PayloadTransfer(
         cancelled: () -> Boolean,
         onProgress: (Long) -> Unit,
     ): Long {
+        LocalNetworkPolicy.checkAddress(address)
         val tap = traffic?.open(KdeTrafficKind.PAYLOAD_RECEIVE, address, port)
         try {
             val raw = Socket()
