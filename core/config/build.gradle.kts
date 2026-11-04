@@ -24,9 +24,13 @@ val localProperties = Properties().apply {
 }
 
 fun apiKey(propertyName: String, envName: String): String =
-    localProperties.getProperty(propertyName)?.trim()
-        ?: System.getenv(envName)?.trim()
-        ?: ""
+    if (flag("wmkb.localOnly", "WMKB_LOCAL_ONLY")) {
+        ""
+    } else {
+        localProperties.getProperty(propertyName)?.trim()
+            ?: System.getenv(envName)?.trim()
+            ?: ""
+    }
 
 /** The Google Home APIs SDK is checked in under feature/ime/libs/googlehome; without it the flag cannot be on. */
 val googleHomeSdk: Boolean = rootProject.file("feature/ime/libs/googlehome").listFiles()?.any { it.name.endsWith(".aar") } == true ||
@@ -43,7 +47,8 @@ fun flag(propertyName: String, envName: String): Boolean =
  * :core:intelligence, :core:voice, :core:content and :feature:ime read the
  * same flag to choose their src/google or src/nogoogle sources.
  */
-val googleSdks: Boolean = !flag("wmkb.enableFdroid", "WMKB_ENABLE_FDROID")
+val localOnly: Boolean = flag("wmkb.localOnly", "WMKB_LOCAL_ONLY")
+val googleSdks: Boolean = !flag("wmkb.enableFdroid", "WMKB_ENABLE_FDROID") && !localOnly
 
 /**
  * Whether the build carries the Qualcomm NPU runtime for on-device AI (#804).
@@ -55,7 +60,7 @@ val npuRuntime: Boolean =
     (providers.gradleProperty("wmkb.enableNpu").orNull
         ?: localProperties.getProperty("wmkb.enableNpu")
         ?: System.getenv("WMKB_ENABLE_NPU")
-        ?: "true").toBoolean() && !flag("wmkb.enableFdroid", "WMKB_ENABLE_FDROID")
+        ?: "true").toBoolean() && !flag("wmkb.enableFdroid", "WMKB_ENABLE_FDROID") && !localOnly
 
 android {
     namespace = "com.wasimaster.wmkeyboard.config"
@@ -81,7 +86,8 @@ android {
         buildConfigField("String", "SMARTTHINGS_CLIENT_ID", "\"${apiKey("wmkb.smartThingsClientId", "WMKB_SMARTTHINGS_CLIENT_ID")}\"")
         buildConfigField("String", "SMARTTHINGS_CLIENT_SECRET", "\"${apiKey("wmkb.smartThingsClientSecret", "WMKB_SMARTTHINGS_CLIENT_SECRET")}\"")
         buildConfigField("Boolean", "ENABLE_PLAY_STORE", "${flag("wmkb.enablePlayStore", "WMKB_ENABLE_PLAY_STORE")}")
-        buildConfigField("Boolean", "ENABLE_FDROID", "${flag("wmkb.enableFdroid", "WMKB_ENABLE_FDROID")}")
+        buildConfigField("Boolean", "ENABLE_FDROID", "${flag("wmkb.enableFdroid", "WMKB_ENABLE_FDROID") || localOnly}")
+        buildConfigField("Boolean", "LOCAL_ONLY", "$localOnly")
         // Diagnostic builds only: on an uncaught exception, replace Android's
         // "app has stopped" dialog with a screen showing the stack trace, with
         // buttons to copy or share it. For getting a trace off a device that
