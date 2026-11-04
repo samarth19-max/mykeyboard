@@ -7,7 +7,13 @@ import org.junit.Test
 
 class WhisperCppPlanTest {
 
-    private fun model(size: WhisperSize, english: Boolean = false) = WhisperModel(
+    private fun model(
+        size: WhisperSize,
+        english: Boolean = false,
+        langCodes: Set<String> = if (english) setOf("en") else emptySet(),
+        fastInference: Boolean = false,
+        forceAutoLanguage: Boolean = false,
+    ) = WhisperModel(
         id = "test",
         displayName = "Whisper test",
         size = size,
@@ -16,11 +22,13 @@ class WhisperCppPlanTest {
         vocabFile = "",
         modelBytes = 1,
         vocabBytes = 0,
-        langCodes = if (english) setOf("en") else emptySet(),
+        langCodes = langCodes,
         selectableLang = !english,
         tier = WhisperTier.STANDARD,
         descriptionRes = 0,
         format = WhisperFormat.GGML,
+        fastInference = fastInference,
+        forceAutoLanguage = forceAutoLanguage,
     )
 
     @Test
@@ -30,6 +38,27 @@ class WhisperCppPlanTest {
         assertEquals(5, WhisperCppPlan.beamSize(model(WhisperSize.TURBO)))
         assertEquals(1, WhisperCppPlan.beamSize(model(WhisperSize.MEDIUM)))
         assertEquals(1, WhisperCppPlan.beamSize(model(WhisperSize.LARGE)))
+    }
+
+    @Test
+    fun `Swift forces Hindi even when the active keyboard layout is English`() {
+        val swift = model(WhisperSize.BASE, langCodes = setOf("hi"))
+        assertEquals(listOf("hi"), WhisperCppPlan.languages(swift, listOf("en")))
+    }
+
+    @Test
+    fun `Apex uses model-side language detection for Hinglish`() {
+        val apex = model(
+            WhisperSize.TURBO,
+            langCodes = setOf("hi", "en"),
+            forceAutoLanguage = true,
+        )
+        assertTrue(WhisperCppPlan.languages(apex, listOf("hi", "en")).isEmpty())
+    }
+
+    @Test
+    fun `Swift fast mode uses greedy decoding`() {
+        assertEquals(1, WhisperCppPlan.beamSize(model(WhisperSize.BASE, fastInference = true)))
     }
 
     @Test
