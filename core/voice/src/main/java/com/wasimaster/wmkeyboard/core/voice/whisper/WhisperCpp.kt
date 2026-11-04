@@ -191,6 +191,29 @@ object WhisperCpp {
         }
     }
 
+    /**
+     * Checks an imported GGML file by opening it with the exact native runtime
+     * this build ships. Used only when the model publisher has not published a
+     * SHA-256 digest; the caller also constrains the filename and byte range.
+     */
+    fun acceptsModelFile(modelFile: File): Boolean {
+        if (!modelFile.isFile || !available) return false
+        lock.lock()
+        return try {
+            val opened = nativeOpen(modelFile.canonicalPath)
+            if (opened == 0L) {
+                false
+            } else {
+                nativeClose(opened)
+                true
+            }
+        } catch (_: Throwable) {
+            false
+        } finally {
+            lock.unlock()
+        }
+    }
+
     private fun openLocked(modelFile: File, gpu: Boolean): Long {
         if (!available) {
             // Play, before the split is here: the same error the LiteRT
