@@ -28,6 +28,7 @@ import java.io.OutputStream
 import java.math.BigInteger
 import java.net.DatagramPacket
 import java.net.Inet4Address
+import com.wasimaster.wmkeyboard.core.netlog.LocalNetworkPolicy
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.MulticastSocket
@@ -316,6 +317,7 @@ class LocalSendNode(
             } catch (e: IOException) {
                 break
             }
+            if (runCatching { LocalNetworkPolicy.checkAddress(packet.address) }.isFailure) continue
             val body = runCatching { JSON.parseToJsonElement(String(packet.data, 0, packet.length)).jsonObject }.getOrNull() ?: continue
             val peer = peerFrom(body, packet.address.hostAddress.orEmpty()) ?: continue
             remember(peer)
@@ -406,6 +408,7 @@ class LocalSendNode(
     }.toString()
 
     private fun url(peer: LocalSendPeer, route: String, query: String = ""): String {
+        LocalNetworkPolicy.checkHost(peer.host)
         val host = if (peer.host.contains(':')) "[${peer.host}]" else peer.host
         val scheme = if (peer.https) "https" else "http"
         return "$scheme://$host:${peer.port}$API/$route$query"
@@ -551,8 +554,9 @@ class LocalSendNode(
             } catch (e: IOException) {
                 break
             }
-            open += client
             try {
+                LocalNetworkPolicy.checkAddress(client.inetAddress)
+                open += client
                 pool.execute { serve(client) }
             } catch (e: RejectedExecutionException) {
                 open -= client
