@@ -1,5 +1,7 @@
 package com.wasimaster.wmkeyboard.core.netlog
 
+import java.net.Inet4Address
+import java.net.Inet6Address
 import java.net.InetAddress
 import java.net.UnknownHostException
 
@@ -40,6 +42,17 @@ object LocalNetworkPolicy {
         }
 
         throw blocked(host)
+    }
+
+    /** Checks an already-resolved peer without performing another name lookup. */
+    fun checkAddress(address: InetAddress) {
+        val allowed = when (address) {
+            is Inet4Address -> isLocalIpv4(address.address.map { it.toInt() and 0xff }.toIntArray()) ||
+                address.address.contentEquals(byteArrayOf(-1, -1, -1, -1))
+            is Inet6Address -> isLocalIpv6(address.address)
+            else -> false
+        }
+        if (!allowed) throw blocked(address.hostAddress.orEmpty())
     }
 
     private fun parseIpv4(host: String): IntArray? {
