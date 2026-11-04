@@ -162,7 +162,7 @@ val channelSourceDirs = listOfNotNull(playServicesSourceDir, updaterSourceDir, g
 // libraries are pinned rather than bundled, and the `en` flavour keeps its
 // language packs. Neither can be fetched without the permission; both come in
 // as imports of the files the release and the data repository publish.
-val noInternet = flag("wmkb.noInternet", "WMKB_NO_INTERNET", default = "true")
+val noInternet = flag("wmkb.noInternet", "WMKB_NO_INTERNET", default = "false")
 
 // A build that cannot ask for location at all (#350): `-Pwmkb.noLocation=true`.
 // The Location tool keeps its saved places and hides Locate me; the weather and
@@ -302,7 +302,7 @@ android {
         buildConfigField("Boolean", "ENABLE_GMS", "$gmsChannel")
         // What About calls this build: the standard one, or the one with no
         // internet permission. Shown as is, like a version name.
-        buildConfigField("String", "EDITION", "\"${if (noInternet) "Offline" else "Standard"}\"")
+        buildConfigField("String", "EDITION", "\"${if (noInternet) "Offline (no LAN)" else "LAN-only"}\"")
         // This module's copies of :core:config's feature flags, for the
         // app-package screens: off in F-Droid's build, which has none of
         // Google's SDKs. Grammar is Harper, in every build.
