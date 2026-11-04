@@ -736,6 +736,9 @@ object WhisperCatalog {
         if (cppAvailable) {
             val picks = LinkedHashSet<WhisperModel>()
             listOfNotNull(default, byId("cpp-base")).forEach { picks += it }
+            if ("hi" in codes) {
+                listOfNotNull(byId("cpp-swift-hinglish"), byId("cpp-apex-hinglish")).forEach { picks += it }
+            }
             if ("en" in codes) byId("cpp-base-en")?.let { picks += it }
             byId("cpp-turbo")?.let { picks += it }
             return picks.take(limit)
@@ -758,6 +761,13 @@ object WhisperCatalog {
         // user is pointed straight at their own model.
         for (code in codes) {
             models.filter { it.fixedLang == code }.minWithOrNull(bestFirst)?.let { picks += it }
+        }
+
+        // The Hinglish fine-tunes are the most relevant speech models for
+        // Hindi users: Swift is the small/fast choice, Apex the larger bilingual
+        // choice. Keep both on the shortlist even though Apex uses auto-detection.
+        if ("hi" in codes) {
+            listOfNotNull(byId("cpp-swift-hinglish"), byId("cpp-apex-hinglish")).forEach { picks += it }
         }
 
         // Always leave an all-languages escape hatch — the only thing that
