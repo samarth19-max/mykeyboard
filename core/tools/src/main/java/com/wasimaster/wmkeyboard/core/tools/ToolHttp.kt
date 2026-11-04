@@ -546,6 +546,10 @@ object ToolHttp {
         val resolved = source ?: NetLog.inferSource(url)
         return NetLog.call(resolved, method, url, route, background ?: resolved.background).track { call ->
             val connection = URL(url).openConnection() as HttpURLConnection
+            // Do not let HttpURLConnection follow a redirect to a public host
+            // behind the LAN-only destination check. Callers can show the
+            // redirect response instead of silently making a second request.
+            connection.instanceFollowRedirects = false
             try {
                 block(connection, call)
             } finally {
