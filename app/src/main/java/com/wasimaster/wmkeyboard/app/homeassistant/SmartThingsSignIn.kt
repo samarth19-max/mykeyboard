@@ -82,7 +82,7 @@ object SmartThingsSignIn {
             val id = SmartThingsAuth.credentialOf(callback.state)
             val credential = repository.settings.first().providerCredential(id)
             val expected = credential?.extra?.get(HomeKeys.AUTH_STATE).orEmpty()
-            if (credential == null || expected.isEmpty() || SmartThingsAuth.nonceOf(expected) != SmartThingsAuth.nonceOf(callback.state)) {
+            if (credential == null || expected.isEmpty() || expected != callback.state) {
                 _status.value = Status.Failed(app.getString(com.wasimaster.wmkeyboard.R.string.ha_sign_in_state_mismatch))
                 return@launch
             }
@@ -91,7 +91,7 @@ object SmartThingsSignIn {
                 val tokens = SmartThingsAuth.exchange(http, BuildConfig.SMARTTHINGS_CLIENT_ID, BuildConfig.SMARTTHINGS_CLIENT_SECRET, callback.code)
                 val location = runCatching { locationName(http, tokens.accessToken) }.getOrNull()
                 repository.updateProviderCredential(id) { c ->
-                    c.copy(apiKey = "", extra = HaConnection.withTokens(c.extra, tokens) + (location?.let { mapOf(HomeKeys.INSTANCE_NAME to it) } ?: emptyMap()))
+                    c.copy(apiKey = "", extra = HaConnection.withTokens(c.extra - HomeKeys.AUTH_STATE, tokens) + (location?.let { mapOf(HomeKeys.INSTANCE_NAME to it) } ?: emptyMap()))
                 }
                 repository.setHaEnabled(true)
                 _status.value = Status.SignedIn(location ?: "SmartThings")
