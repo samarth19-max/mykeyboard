@@ -57,6 +57,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":core:common"))
     implementation(libs.kotlinx.serialization.json)
     api(libs.okhttp)
 
